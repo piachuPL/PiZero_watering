@@ -1,3 +1,4 @@
+from astral import Astral
 import  time
 import datetime
 import logging
@@ -6,12 +7,12 @@ from secrets import *                                   #import secret passwords
 import requests
 import bs4 as bs 
 
-HH = 21
-MM = 00                               
+HH = 18
+MM = 30                               
 
 
 ### Loging 
-logging.basicConfig(filename='myapp.log', level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(filename='p_LOG.log', level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 logging.info('Started')
 
 
@@ -19,7 +20,7 @@ logging.info('Started')
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BOARD)
 GPIO.setwarnings(False)
-valves= [['zawor1',37,600],['zawor2',35,600],['zawor3',33,600]]             #[1,37,20] = 1=valve 37 = GPIO 20 = min ON
+valves= [['zawor1',37,150],['zawor2',35,150],['zawor3',33,150]]             #[1,37,20] = 1=valve 37 = GPIO 20 = min ON
 GPIO.setup(3, GPIO.IN)
 delay_time=0
 gpio_rain = 0                                       # ## when GPIO working
@@ -70,21 +71,25 @@ def time_now():
 start_time = time_now()
 print('Start APP : ' + str(start_time))
 
-### sunset geting from site meteocast.net hour of sunset and returning in format HH MM.
+### sunset() geting from astral hour of sunset and returning in format HH MM.
 def sunset(sleep_time):
-    try:
-        resp = requests.get(meteocast_url)                    #url in secrets 
-        soup = bs.BeautifulSoup(resp.text, 'html.parser')
-        table = soup.find('a', {'class':'wdn'})
-        hour = table.findAll('b')[2].text
-        HH = hour[0]+hour[1]
-        MM = hour[3]+hour[4]
-        time.sleep(sleep_time)                                    #sleep to make req only once
-        return int(HH), int(MM)
-        logging.info('Zachod słonca o: {}:{}'.format(HH, MM))
-    except:
-        print('sunset() error')
-        logging.info('sundet() error')
+    city_name = 'Warsaw'
+    a = Astral()
+    a.solar_depression = 'civil'
+    city = a[city_name]
+    today = datetime.datetime.now()
+
+    sun = city.sun(date=today, local=True)
+    time.sleep(sleep_time)
+    
+    str_sun = str(sun['dusk'])
+    HH = int(str_sun[11:13])
+    MM = int(str_sun[14:16])
+    logging.info('Dzis {}.{}.{} zmierzch jest o {}:{}.'.format(today.day, today.month, today.year,HH, MM))
+    return HH, MM
+
+HH, MM = sunset(1)
+
 
 ###GPIO reload sequence on start  
 for i in valves:
@@ -94,7 +99,6 @@ for i in valves:
         GPIO.output(i[1], GPIO.HIGH)
         time.sleep(1)
 
-HH, MM = sunset(1)
 
 while True:
 #    now = datetime.datetime.now()
@@ -102,10 +106,10 @@ while True:
 
 #    print(zm)
     time.sleep(1)
-    if time_now() == datetime.time(12, 00):              #sunset update time
-            HH, MM = sunset(60)
-            print(HH, MM)      
-#    print('od poczatku')
+    if time_now() == datetime.time(12, 30):              #sunset update time
+            HH, MM = sunset(59)
+
+
     while GPIO.input(3) == 0:
 #    while gpio_rain == 1:                              # only for testing
       
