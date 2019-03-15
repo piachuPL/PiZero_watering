@@ -19,7 +19,7 @@ logging.info('Started')
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BOARD)
 GPIO.setwarnings(False)
-valves= [['zawor1',37,150],['zawor2',35,150],['zawor3',33,150]]             #[1,37,20] = 1=valve 37 = GPIO 20 = min ON
+valves= [['zawor1',37,600],['zawor2',35,600],['zawor3',33,600]]             #[1,37,20] = 1=valve 37 = GPIO 20 = min ON
 GPIO.setup(3, GPIO.IN)
 delay_time=0
 gpio_rain = 0                                       # ## when GPIO working
@@ -71,7 +71,7 @@ start_time = time_now()
 print('Start APP : ' + str(start_time))
 
 ### sunset geting from site meteocast.net hour of sunset and returning in format HH MM.
-def sunset():
+def sunset(sleep_time):
     try:
         resp = requests.get(meteocast_url)                    #url in secrets 
         soup = bs.BeautifulSoup(resp.text, 'html.parser')
@@ -79,7 +79,7 @@ def sunset():
         hour = table.findAll('b')[2].text
         HH = hour[0]+hour[1]
         MM = hour[3]+hour[4]
-        time.sleep(60)                                    #sleep to make req only once
+        time.sleep(sleep_time)                                    #sleep to make req only once
         return int(HH), int(MM)
         logging.info('Zachod słonca o: {}:{}'.format(HH, MM))
     except:
@@ -94,15 +94,16 @@ for i in valves:
         GPIO.output(i[1], GPIO.HIGH)
         time.sleep(1)
 
+HH, MM = sunset(1)
 
 while True:
-    now = datetime.datetime.now()
-    zm = datetime.time(now.hour, now.minute, now.second)
+#    now = datetime.datetime.now()
+#    zm = datetime.time(now.hour, now.minute, now.second)
 
 #    print(zm)
     time.sleep(1)
-    if time_now() == datetime.time(21, 3):              #sunset update time
-            HH, MM = sunset()
+    if time_now() == datetime.time(12, 00):              #sunset update time
+            HH, MM = sunset(60)
             print(HH, MM)      
 #    print('od poczatku')
     while GPIO.input(3) == 0:
