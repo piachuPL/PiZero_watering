@@ -1,18 +1,17 @@
-from astral import Astral
 import  time
 import datetime
 import logging
 import paho.mqtt.client as mqtt
+from astral import Astral
 from secrets import *                                   #import secret passwords :D
-import requests
-import bs4 as bs 
 
-HH = 18
-MM = 30                               
+
+HH = 19
+MM = 10                               
 
 
 ### Loging 
-logging.basicConfig(filename='p_LOG.log', level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(filename='p_LOG.log', level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%d/%m/%Y %I:%M:%S %p')
 logging.info('Started')
 
 
@@ -46,17 +45,17 @@ def msd_mqtt(valve, msg):
 ### GPIO sequence opening valve one by one 
 def watering():
     for x in valves:
-        print('otwieram : '+ str(x[0]))                 #printing opening valve1...2...3...
-        print('otwarcie gpio :'+ str(x[1]))             # printing 'opening GPIO Port
-        logging.info('otwieram : '+ str(x[0]))          #log
-        GPIO.setup(x[1], GPIO.OUT)                      #set GPIO
-        GPIO.output(x[1], GPIO.LOW)                    #Set 1
-        msd_mqtt(str(x[0]), 'ON')                       # send msg MQTT
-        time.sleep(x[2])                                #
+        print('otwieram : '+ str(x[0]))                         #printing opening valve1...2...3...
+        print('otwarcie gpio :'+ str(x[1]))                     # printing 'opening GPIO Port
+        logging.info('otwieram : {}'.format(str(x[0])))         #log
+        GPIO.setup(x[1], GPIO.OUT)                              #set GPIO
+        GPIO.output(x[1], GPIO.LOW)                             #Set 1
+        msd_mqtt(str(x[0]), 'ON')                               # send msg MQTT
+        time.sleep(x[2])                                        #
         print('zamkn gpio :'+ str(x[1]))
         GPIO.output(x[1], GPIO.HIGH)
         print('zamkniety: '+ str(x[0]))
-        logging.info('zamkniety : '+ str(x[0]))
+        logging.info('zamkniety : {}'.format(str(x[0])))
         msd_mqtt(str(x[0]), 'OFF')
         time.sleep(3)
 
@@ -107,7 +106,7 @@ while True:
 #    print(zm)
     time.sleep(1)
     if time_now() == datetime.time(12, 30):              #sunset update time
-            HH, MM = sunset(59)
+            HH, MM = sunset(60)
 
 
     while GPIO.input(3) == 0:
@@ -115,6 +114,7 @@ while True:
       
         print('pada')
         if delay_time == 6:
+                logging.info('Zaczelo padac')
                 msd_mqtt('rain_sensor', 'ON')
         time.sleep(2)
         delay_time += 2
@@ -125,15 +125,18 @@ while True:
          
         if delay_time>0:
                 if delay_time == 2:
+                        logging.info('Przestalo padac')
                         msd_mqtt('rain_sensor', 'OFF')
                 delay_time -= 2
                 time.sleep(2)
-                print('ziemia wilgotna '+ str(delay_time))
+                print('ziemia wilgotna {}'.format(str(delay_time)))
+                
         else:
 
                 if time_now() == datetime.time(HH,MM): #Setting when watering starts
                         start_time = time_now()
-                        print ('Zaczynam Podlewanie: ' + str(start_time) )
+                        print ('Zaczynam Podlewanie: {}'.format(str(start_time)))
+                        logging.info('Podlewanie')
                         watering()
 
 
